@@ -287,5 +287,171 @@ const deleteReading = async (req, res) => {
 };
 
 
+const getDailyReport = async (req, res) => {
+    try {
+        // Get the selected date from query parameters
+        const { date } = req.query;
 
-module.exports = { addReading, getReadings, updateReading, deleteReading };
+        // Get logged-in user's ID
+        const user_id = req.user.id;
+
+        // Check whether date is provided
+        if (!date) {
+            return res.status(400).json({
+                message: "Please provide a date."
+            });
+        }
+
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return res.status(400).json({
+                message: "Invalid date format. Use YYYY-MM-DD."
+            });
+        }
+
+        const [year, month, day] = date.split("-").map(Number);
+        const dateCheck = new Date(Date.UTC(year, month - 1, day));
+
+        if (
+            dateCheck.getUTCFullYear() !== year ||
+            dateCheck.getUTCMonth() !== month - 1 ||
+            dateCheck.getUTCDate() !== day
+        ) {
+            return res.status(400).json({
+                message: "Please provide a valid date."
+            });
+        }
+
+        // Fetch daily readings
+        const result = await pool.query(
+            `SELECT
+                COALESCE(MAX(glucose_value), 0) AS highest,
+                COALESCE(MIN(glucose_value), 0) AS lowest,
+                COALESCE(ROUND(AVG(glucose_value), 1), 0) AS average,
+                COUNT(*) AS total_readings
+             FROM readings
+             WHERE user_id = $1 AND reading_date = $2`,
+            [user_id, date]
+        );
+
+        // Fetch individual readings for that date
+        const readings = await pool.query(
+            `SELECT id, reading_date, time_slot, glucose_value
+             FROM readings
+             WHERE user_id = $1 AND reading_date = $2
+             ORDER BY time_slot`,
+            [user_id, date]
+        );
+
+        return res.status(200).json({
+            message: "Daily report fetched successfully!",
+            summary: result.rows[0],
+            readings: readings.rows
+        });
+
+    } catch (error) {
+        console.error(error.message);
+
+        return res.status(500).json({
+            message: "Something went wrong while generating the daily report."
+        });
+    }
+};
+
+
+const getMonthToDateReport = async (req, res) => {
+    try {
+        // Get the logged-in user's ID
+        const user_id = req.user.id;
+
+        // Calculate the first day of the current month
+        const result = await pool.query(
+            `SELECT
+                COALESCE(MAX(glucose_value), 0) AS highest,
+                COALESCE(MIN(glucose_value), 0) AS lowest,
+                COALESCE(ROUND(AVG(glucose_value), 1), 0) AS average,
+                COUNT(*) AS total_readings
+             FROM readings
+             WHERE user_id = $1
+             AND reading_date >= DATE_TRUNC('month', CURRENT_DATE)::date
+             AND reading_date <= CURRENT_DATE`,
+            [user_id]
+        );
+
+        // Fetch individual readings for this month
+        const readings = await pool.query(
+            `SELECT id, reading_date, time_slot, glucose_value
+             FROM readings
+             WHERE user_id = $1
+             AND reading_date >= DATE_TRUNC('month', CURRENT_DATE)::date
+             AND reading_date <= CURRENT_DATE
+             ORDER BY reading_date DESC, created_at DESC`,
+            [user_id]
+        );
+
+        return res.status(200).json({
+            message: "Month-to-date report fetched successfully!",
+            summary: result.rows[0],
+            readings: readings.rows
+        });
+
+    } catch (error) {
+        console.error(error.message);
+
+        return res.status(500).json({
+            message: "Something went wrong while generating the month-to-date report."
+        });
+    }
+};
+
+
+const getPreviousMonthReport = async (req, res) => {
+    try {
+        // Get the logged-in user's ID
+        const user_id = req.user.id;
+
+        // Calculate previous month's date range
+        const result = await pool.query(
+            `SELECT
+                COALESCE(MAX(glucose_value), 0) AS highest,
+                COALESCE(MIN(glucose_value), 0) AS lowest,
+                COALESCE(ROUND(AVG(glucose_value), 1), 0) AS average,
+                COUNT(*) AS total_readings
+             FROM readings
+             WHERE user_id = $1
+             AND reading_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
+             AND reading_date < DATE_TRUNC('month', CURRENT_DATE)::date`,
+            [user_id]
+        );
+
+        // Fetch individual readings
+        const readings = await pool.query(
+            `SELECT id, reading_date, time_slot, glucose_value
+             FROM readings
+             WHERE user_id = $1
+             AND reading_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
+             AND reading_date < DATE_TRUNC('month', CURRENT_DATE)::date
+             ORDER BY reading_date DESC, created_at DESC`,
+            [user_id]
+        );
+
+        return res.status(200).json({
+            message: "Previous month report fetched successfully!",
+            summary: result.rows[0],
+            readings: readings.rows
+        });
+
+    } catch (error) {
+        console.error(error.message);
+
+        return res.status(500).json({
+            message: "Something went wrong while generating the previous month report."
+        });
+    }
+};
+
+
+
+
+module.exports = { addReading, getReadings, updateReading, deleteReading, 
+    getDailyReport, getMonthToDateReport, getPreviousMonthReport };
