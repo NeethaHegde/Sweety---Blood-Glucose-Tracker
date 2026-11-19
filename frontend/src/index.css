@@ -1,0 +1,48 @@
+
+/* Sweety - Global Styles */
+
+:root {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: #1E293B;
+  background: #F8FAFC;
+
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-primary: #0F62FE;
+  --color-accent: #E0F2FE;
+  --color-text: #1E293B;
+  --color-muted: #64748B;
+
+  --color-very-high: #7C3AED;
+  --color-high: #F59E0B;
+  --color-normal: #10B981;
+  --color-low: #F43F5E;
+  --color-very-low: #DC2626;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
