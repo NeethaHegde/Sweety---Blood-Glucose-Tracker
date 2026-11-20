@@ -167,8 +167,4 @@ This creates a demo account and sample glucose readings.
 - Automated tests are not currently included; application functionality and validation were manually verified.
 - With more time, automated backend and frontend tests, improved error handling, and deployment could be added.
 
-## Author
 
-Developed as a full-stack application using React, Node.js, Express, and PostgreSQL.
-
-give the full frontend structure
