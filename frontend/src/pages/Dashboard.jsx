@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { HeartPulse, LogOut } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import API from "../services/api";
 import "../App.css";
+import Pagination from "../components/Pagination";
+import Navbar from "../components/NavBar";
 
 function getTodayDate() {
     const today = new Date();
@@ -16,26 +16,40 @@ function getTodayDate() {
 }
 
 function Dashboard() {
-    const navigate = useNavigate();
+   
     const formRef = useRef(null);
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+    
+
     const [readings, setReadings] = useState([]);
+const [currentPage, setCurrentPage] = useState(1);
+
+const readingsPerPage = 5;
+
+const totalPages = Math.ceil(readings.length / readingsPerPage);
+
+const indexOfLastReading = currentPage * readingsPerPage;
+const indexOfFirstReading = indexOfLastReading - readingsPerPage;
+
+const currentReadings = readings.slice(
+    indexOfFirstReading,
+    indexOfLastReading
+);
+
+useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+        setCurrentPage(totalPages);
+    }
+}, [currentPage, totalPages]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [selectedDate, setSelectedDate] = useState(getTodayDate());
-    const [dailyReport, setDailyReport] = useState(null);
-    const [reportLoading, setReportLoading] = useState(false);
-    const [monthlyReport, setMonthlyReport] = useState(null);
-    const [monthlyReportLoading, setMonthlyReportLoading] = useState(false);
-    const [previousMonthReport, setPreviousMonthReport] = useState(null);
-    const [previousMonthLoading, setPreviousMonthLoading] = useState(false);
     const [deleteReadingId, setDeleteReadingId] = useState(null);
-    const [selectedReport, setSelectedReport] = useState("daily");
+
 
     const [formData, setFormData] = useState({
         reading_date: getTodayDate(),
@@ -43,11 +57,7 @@ function Dashboard() {
         glucose_value: "",
     });
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login");
-    };
+ 
 
     const fetchReadings = async () => {
         try {
@@ -62,79 +72,15 @@ function Dashboard() {
             setLoading(false);
         }
     };
-    const fetchDailyReport = async () => {
-        try {
-            setReportLoading(true);
-            setError("");
+    
 
-            const response = await API.get(
-                `/readings/daily?date=${selectedDate}`
-            );
-
-            setDailyReport(response.data);
-        } catch (err) {
-            setError(
-                err.response?.data?.message || "Unable to fetch daily report."
-            );
-        } finally {
-            setReportLoading(false);
-        }
-    };
-
-    const fetchMonthlyReport = async () => {
-        try {
-            setMonthlyReportLoading(true);
-            setError("");
-
-            const response = await API.get("/readings/month-to-date");
-
-            setMonthlyReport(response.data);
-        } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                "Unable to fetch monthly report."
-            );
-        } finally {
-            setMonthlyReportLoading(false);
-        }
-    };
-
-    const fetchPreviousMonthReport = async () => {
-        try {
-            setPreviousMonthLoading(true);
-            setError("");
-
-            const response = await API.get("/readings/previous-month");
-
-            setPreviousMonthReport(response.data);
-        } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                "Unable to fetch previous month's report."
-            );
-        } finally {
-            setPreviousMonthLoading(false);
-        }
-    };
 
 
     // Fetch all glucose readings when the dashboard loads
     useEffect(() => {
         fetchReadings();
     }, []);
-
-    // Fetch daily report whenever the selected date changes
-    useEffect(() => {
-        fetchDailyReport();
-    }, [selectedDate]);
-
-    useEffect(() => {
-        fetchMonthlyReport();
-    }, []);
-
-    useEffect(() => {
-        fetchPreviousMonthReport();
-    }, []);
+    
 
     const handleChange = (e) => {
         setFormData({
@@ -176,9 +122,7 @@ function Dashboard() {
             setEditingId(null);
 
             await fetchReadings();
-            await fetchDailyReport();
-            await fetchMonthlyReport();
-            await fetchPreviousMonthReport();
+           
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -202,63 +146,50 @@ function Dashboard() {
         setSuccess("");
 
         formRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-    });
+            behavior: "smooth",
+            block: "start",
+        });
     };
-    
 
-   // Open the custom confirmation modal
-const handleDelete = (id) => {
-    setDeleteReadingId(id);
-};
 
-// Delete only after the user confirms
-const confirmDelete = async () => {
-    try {
-        setError("");
-        setSuccess("");
+    // Open the custom confirmation modal
+    const handleDelete = (id) => {
+        setDeleteReadingId(id);
+    };
 
-        await API.delete(`/readings/${deleteReadingId}`);
+    // Delete only after the user confirms
+    const confirmDelete = async () => {
+        try {
+            setError("");
+            setSuccess("");
 
-        setSuccess("Reading deleted successfully!");
+            await API.delete(`/readings/${deleteReadingId}`);
 
-        if (editingId === deleteReadingId) {
-            setEditingId(null);
-            setFormData({
-                reading_date: getTodayDate(),
-                time_slot: "Morning",
-                glucose_value: "",
-            });
+            setSuccess("Reading deleted successfully!");
+
+            if (editingId === deleteReadingId) {
+                setEditingId(null);
+                setFormData({
+                    reading_date: getTodayDate(),
+                    time_slot: "Morning",
+                    glucose_value: "",
+                });
+            }
+
+            setDeleteReadingId(null);
+
+            await fetchReadings();
+           
+        } catch (err) {
+            setError(
+                err.response?.data?.message || "Unable to delete reading."
+            );
         }
-
-        setDeleteReadingId(null);
-
-       await fetchReadings();
-        await fetchDailyReport();
-        await fetchMonthlyReport();
-        await fetchPreviousMonthReport();
-
-    } catch (err) {
-        setError(
-            err.response?.data?.message || "Unable to delete reading."
-        );
-    }
-};
+    };
 
     return (
         <div className="dashboard-container">
-            <nav className="dashboard-navbar">
-                <div className="dashboard-logo">
-                    <HeartPulse size={26} />
-                    <h2>Sweety</h2>
-                </div>
-
-                <button className="logout-button" onClick={handleLogout}>
-                    <LogOut size={18} />
-                    Logout
-                </button>
-            </nav>
+            <Navbar />
 
             <main className="dashboard-content">
                 <div className="dashboard-welcome">
@@ -357,178 +288,6 @@ const confirmDelete = async () => {
                     </form>
                 </section>
 
-                {/* Daily Report */}
-                <div className="report-selector">
-    <label htmlFor="reportType">Choose a report</label>
-
-    <select
-        id="reportType"
-        value={selectedReport}
-        onChange={(e) => setSelectedReport(e.target.value)}
-    >
-        <option value="daily">Daily Report</option>
-        <option value="monthly">Month-to-Date Report</option>
-        <option value="previous">Previous Month Report</option>
-    </select>
-</div>
-{selectedReport === "daily" && (
-                <section className="report-section">
-                    <div className="section-heading">
-                        <h2>Daily Glucose Report</h2>
-                        <p>View your glucose summary for a selected date.</p>
-                    </div>
-
-                    <div className="report-date-filter">
-                        <label htmlFor="report-date">Select Date</label>
-                        <input
-                            type="date"
-                            id="report-date"
-                            value={selectedDate}
-                            max={getTodayDate()}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                        />
-                    </div>
-                
-
-                    
-{reportLoading ? (
-    <p>Loading report...</p>
-) : dailyReport ? (
-    <>
-        <div className="report-summary">
-            <div className="report-card">
-                <h3>Highest</h3>
-                <p>{dailyReport.summary.highest ?? "--"} <span>mg/dL</span></p>
-            </div>
-
-            <div className="report-card">
-                <h3>Lowest</h3>
-                <p>{dailyReport.summary.lowest ?? "--"} <span>mg/dL</span></p>
-            </div>
-
-            <div className="report-card">
-                <h3>Average</h3>
-                <p>{dailyReport.summary.average ?? "--"} <span>mg/dL</span></p>
-            </div>
-
-            <div className="report-card">
-                <h3>Total Readings</h3>
-                <p>{dailyReport.summary.total_readings ?? 0}</p>
-            </div>
-        </div>
-
-        <div className="daily-report-readings">
-            <h3>Readings for Selected Date</h3>
-
-            {dailyReport.readings.length === 0 ? (
-                <p>No readings recorded for this date.</p>
-            ) : (
-                <div className="readings-table-wrapper">
-                    <table className="readings-table">
-                        <thead>
-                            <tr>
-                                <th>Time Slot</th>
-                                <th>Glucose Value</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {dailyReport.readings.map((reading) => (
-                                <tr key={reading.id}>
-                                    <td>{reading.time_slot}</td>
-                                    <td>
-                                        <strong>{reading.glucose_value} mg/dL</strong>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
-    </>
-) : (
-    <p>No report available.</p>
-)}
-
-                </section>
-                )}
-
-                {/* Month-to-Date Report */}
-                {selectedReport === "monthly" && (
-                <section className="report-section">
-                    <div className="section-heading">
-                        <h2>Month-to-Date Report</h2>
-                        <p>Your glucose summary from the beginning of this month.</p>
-                    </div>
-
-                    {monthlyReportLoading ? (
-                        <p>Loading monthly report...</p>
-                    ) : monthlyReport ? (
-                        <div className="report-summary">
-                            <div className="report-card">
-                                <h3>Highest</h3>
-                                <p>{monthlyReport.summary.highest ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Lowest</h3>
-                                <p>{monthlyReport.summary.lowest ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Average</h3>
-                                <p>{monthlyReport.summary.average ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Total Readings</h3>
-                                <p>{monthlyReport.summary.total_readings ?? 0}</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>No monthly report available.</p>
-                    )}
-                </section>
-                )}
-
-                {/* Previous Month Report */}
-                {selectedReport === "previous" && (
-                <section className="report-section">
-                    <div className="section-heading">
-                        <h2>Previous Month Report</h2>
-                        <p>Your glucose summary for the previous calendar month.</p>
-                    </div>
-
-                    {previousMonthLoading ? (
-                        <p>Loading previous month's report...</p>
-                    ) : previousMonthReport ? (
-                        <div className="report-summary">
-                            <div className="report-card">
-                                <h3>Highest</h3>
-                                <p>{previousMonthReport.summary.highest ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Lowest</h3>
-                                <p>{previousMonthReport.summary.lowest ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Average</h3>
-                                <p>{previousMonthReport.summary.average ?? "--"} <span>mg/dL</span></p>
-                            </div>
-
-                            <div className="report-card">
-                                <h3>Total Readings</h3>
-                                <p>{previousMonthReport.summary.total_readings ?? 0}</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>No previous month report available.</p>
-                    )}
-                </section>
-                )}
 
                 {loading && <p>Loading your readings...</p>}
 
@@ -560,7 +319,7 @@ const confirmDelete = async () => {
                                     </thead>
 
                                     <tbody>
-                                        {readings.map((reading) => (
+                                        {currentReadings.map((reading) => (
                                             <tr key={reading.id}>
                                                 <td>
                                                     {new Date(reading.reading_date).toLocaleDateString(
@@ -595,6 +354,11 @@ const confirmDelete = async () => {
                                         ))}
                                     </tbody>
                                 </table>
+                                <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={setCurrentPage}
+/>
                             </div>
                         )}
                     </div>
