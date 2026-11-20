@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import API from "../services/api";
 import Navbar from "../components/NavBar";
 import "../App.css";
-import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart,
-    Bar} from "recharts";
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart,
+    Bar
+} from "recharts";
 
 function getTodayDate() {
     const today = new Date();
@@ -105,50 +107,50 @@ function Reports() {
     // Prepare data for the glucose trend chart
 
 
-  
-const chartReadings =
-    selectedReport === "previous"
-        ? previousMonthReport?.readings || []
-        : monthlyReport?.readings || [];
 
-const trendData = chartReadings
-    .map((reading) => ({
-        date: new Date(reading.reading_date).toLocaleDateString(
-            "en-IN",
-            { timeZone: "Asia/Kolkata" }
-        ),
-        glucose: Number(reading.glucose_value),
-        timeSlot: reading.time_slot
-    }))
-    .sort(
-        (a, b) =>
-            new Date(a.date.split("/").reverse().join("-")) -
-            new Date(b.date.split("/").reverse().join("-"))
-    );
+    const chartReadings =
+        selectedReport === "previous"
+            ? previousMonthReport?.readings || []
+            : monthlyReport?.readings || [];
 
-const timeSlotData = [
-    "Morning",
-    "After breakfast",
-    "After lunch",
-    "After dinner"
-].map((slot) => {
-    const readings = chartReadings.filter(
-        (reading) => reading.time_slot === slot
-    );
+    const trendData = chartReadings
+        .map((reading) => ({
+            date: new Date(reading.reading_date).toLocaleDateString(
+                "en-IN",
+                { timeZone: "Asia/Kolkata" }
+            ),
+            glucose: Number(reading.glucose_value),
+            timeSlot: reading.time_slot
+        }))
+        .sort(
+            (a, b) =>
+                new Date(a.date.split("/").reverse().join("-")) -
+                new Date(b.date.split("/").reverse().join("-"))
+        );
 
-    const average = readings.length > 0
-        ? readings.reduce(
-            (total, reading) => total + Number(reading.glucose_value),
-            0
-        ) / readings.length
-        : 0;
+    const timeSlotData = [
+        "Morning",
+        "After breakfast",
+        "After lunch",
+        "After dinner"
+    ].map((slot) => {
+        const readings = chartReadings.filter(
+            (reading) => reading.time_slot === slot
+        );
 
-    return {
-        timeSlot: slot,
-        average: Number(average.toFixed(1)),
-        count: readings.length
-    };
-});
+        const average = readings.length > 0
+            ? readings.reduce(
+                (total, reading) => total + Number(reading.glucose_value),
+                0
+            ) / readings.length
+            : 0;
+
+        return {
+            timeSlot: slot,
+            average: Number(average.toFixed(1)),
+            count: readings.length
+        };
+    });
 
     return (
         <div className="dashboard-container">
@@ -403,94 +405,94 @@ const timeSlotData = [
                     </section>
                 )}
 
-                                {/* Glucose Trend Chart */}
-                                {(selectedReport === "monthly" || selectedReport === "previous") && (
-                <section className="report-section">
-                    <div className="section-heading">
-                        <h2>Glucose Trend</h2>
-                        <p>
-                            Track how your glucose readings change throughout this month.
-                        </p>
-                    </div>
+                {/* Glucose Trend Chart */}
+                {(selectedReport === "monthly" || selectedReport === "previous") && (
+                    <section className="report-section">
+                        <div className="section-heading">
+                            <h2>Glucose Trend</h2>
+                            <p>
+                                Track how your glucose readings change throughout this month.
+                            </p>
+                        </div>
 
-                    {monthlyReportLoading ? (
-                        <p>Loading chart...</p>
-                    ) : trendData.length === 0 ? (
-                        <p>No readings available to display.</p>
-                    ) : (
-                        <ResponsiveContainer width="100%" height={350}>
-                            <LineChart data={trendData}>
-                                <CartesianGrid strokeDasharray="3 3" />
+                        {monthlyReportLoading ? (
+                            <p>Loading chart...</p>
+                        ) : trendData.length === 0 ? (
+                            <p>No readings available to display.</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={350}>
+                                <LineChart data={trendData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
 
-                                <XAxis dataKey="date" />
+                                    <XAxis dataKey="date" />
 
-                                <YAxis
-                                    domain={["auto", "auto"]}
-                                    label={{
-                                        value: "Glucose (mg/dL)",
-                                        angle: -90,
-                                        position: "insideLeft"
-                                    }}
-                                />
+                                    <YAxis
+                                        domain={["auto", "auto"]}
+                                        label={{
+                                            value: "Glucose (mg/dL)",
+                                            angle: -90,
+                                            position: "insideLeft"
+                                        }}
+                                    />
 
-                                <Tooltip />
+                                    <Tooltip />
 
-                                <Line
-                                    type="monotone"
-                                    dataKey="glucose"
-                                    stroke="#0F62FE"
-                                    strokeWidth={3}
-                                    dot={{ r: 5 }}
-                                    activeDot={{ r: 7 }}
-                                    name="Glucose"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    )}
-                </section>
-                                )}
-                                {/* Time Slot Comparison Chart */}
-{selectedReport === "monthly" && (
-    <section className="report-section">
-        <div className="section-heading">
-            <h2>Time Slot Comparison</h2>
-            <p>
-                Compare your average glucose readings across different time slots this month.
-            </p>
-        </div>
+                                    <Line
+                                        type="monotone"
+                                        dataKey="glucose"
+                                        stroke="#0F62FE"
+                                        strokeWidth={3}
+                                        dot={{ r: 5 }}
+                                        activeDot={{ r: 7 }}
+                                        name="Glucose"
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
+                    </section>
+                )}
+                {/* Time Slot Comparison Chart */}
+                {(selectedReport === "monthly" || selectedReport === "previous") && (
+                    <section className="report-section">
+                        <div className="section-heading">
+                            <h2>Time Slot Comparison</h2>
+                            <p>
+                               Compare your average glucose readings across different time slots.
+                            </p>
+                        </div>
 
-        {monthlyReportLoading ? (
-            <p>Loading chart...</p>
-        ) : timeSlotData.every((item) => item.count === 0) ? (
-            <p>No readings available to display.</p>
-        ) : (
-            <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={timeSlotData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                       {(selectedReport === "previous" ? previousMonthLoading : monthlyReportLoading) ? (
+                            <p>Loading chart...</p>
+                        ) : timeSlotData.every((item) => item.count === 0) ? (
+                            <p>No readings available to display.</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={350}>
+                                <BarChart data={timeSlotData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
 
-                    <XAxis dataKey="timeSlot" />
+                                    <XAxis dataKey="timeSlot" />
 
-                    <YAxis
-                        label={{
-                            value: "Average Glucose (mg/dL)",
-                            angle: -90,
-                            position: "insideLeft"
-                        }}
-                    />
+                                    <YAxis
+                                        label={{
+                                            value: "Average Glucose (mg/dL)",
+                                            angle: -90,
+                                            position: "insideLeft"
+                                        }}
+                                    />
 
-                    <Tooltip />
+                                    <Tooltip />
 
-                    <Bar
-                        dataKey="average"
-                        fill="#0F62FE"
-                        name="Average Glucose"
-                        radius={[6, 6, 0, 0]}
-                    />
-                </BarChart>
-            </ResponsiveContainer>
-        )}
-    </section>
-)}
+                                    <Bar
+                                        dataKey="average"
+                                        fill="#0F62FE"
+                                        name="Average Glucose"
+                                        radius={[6, 6, 0, 0]}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </section>
+                )}
             </main>
         </div>
     );

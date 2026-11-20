@@ -16,33 +16,33 @@ function getTodayDate() {
 }
 
 function Dashboard() {
-   
+
     const formRef = useRef(null);
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    
+
 
     const [readings, setReadings] = useState([]);
-const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
 
-const readingsPerPage = 5;
+    const readingsPerPage = 5;
 
-const totalPages = Math.ceil(readings.length / readingsPerPage);
+    const totalPages = Math.ceil(readings.length / readingsPerPage);
 
-const indexOfLastReading = currentPage * readingsPerPage;
-const indexOfFirstReading = indexOfLastReading - readingsPerPage;
+    const indexOfLastReading = currentPage * readingsPerPage;
+    const indexOfFirstReading = indexOfLastReading - readingsPerPage;
 
-const currentReadings = readings.slice(
-    indexOfFirstReading,
-    indexOfLastReading
-);
+    const currentReadings = readings.slice(
+        indexOfFirstReading,
+        indexOfLastReading
+    );
 
-useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-        setCurrentPage(totalPages);
-    }
-}, [currentPage, totalPages]);
+    useEffect(() => {
+        if (totalPages > 0 && currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -57,7 +57,7 @@ useEffect(() => {
         glucose_value: "",
     });
 
- 
+
 
     const fetchReadings = async () => {
         try {
@@ -72,7 +72,7 @@ useEffect(() => {
             setLoading(false);
         }
     };
-    
+
 
 
 
@@ -80,7 +80,7 @@ useEffect(() => {
     useEffect(() => {
         fetchReadings();
     }, []);
-    
+
 
     const handleChange = (e) => {
         setFormData({
@@ -122,7 +122,7 @@ useEffect(() => {
             setEditingId(null);
 
             await fetchReadings();
-           
+
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -134,10 +134,14 @@ useEffect(() => {
     };
 
     const handleEdit = (reading) => {
+        console.log("Reading date:", reading.reading_date);
         setEditingId(reading.id);
 
         setFormData({
-            reading_date: reading.reading_date.substring(0, 10),
+            reading_date: new Date(reading.reading_date)
+                .toLocaleDateString("en-CA", {
+                    timeZone: "Asia/Kolkata",
+                }),
             time_slot: reading.time_slot,
             glucose_value: reading.glucose_value,
         });
@@ -179,7 +183,7 @@ useEffect(() => {
             setDeleteReadingId(null);
 
             await fetchReadings();
-           
+
         } catch (err) {
             setError(
                 err.response?.data?.message || "Unable to delete reading."
@@ -355,10 +359,10 @@ useEffect(() => {
                                     </tbody>
                                 </table>
                                 <Pagination
-    currentPage={currentPage}
-    totalPages={totalPages}
-    onPageChange={setCurrentPage}
-/>
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                />
                             </div>
                         )}
                     </div>
